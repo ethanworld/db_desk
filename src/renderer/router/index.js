@@ -12,11 +12,6 @@ export default new Router({
   routes: [
     {
       path: '/',
-      name: 'Login',
-      component: Login
-    },
-    {
-      path: '/data',
       component: DataViewMain,
       meta: {
         requireAuth: true
@@ -39,6 +34,11 @@ export default new Router({
           component: DataNode
         }
       ]
+    },
+    {
+      path: '/login',
+      name: 'Login',
+      component: Login
     },
     {
       path: '/manage',

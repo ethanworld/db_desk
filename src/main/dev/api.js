@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron')
+const { ipcMain, dialog } = require('electron')
 let fs = require('fs')
 let mkdirp = require('mkdirp')
 let getDirName = require('path').dirname
@@ -196,6 +196,12 @@ exports.api = function () {
           event.sender.send('getPostFileRes', fileName)
         }
       })
+    })
+  })
+  ipcMain.on('saveFile', (event) => {
+    dialog.showOpenDialog({properties: ['openDirectory']}, function (filename) {
+      // 通知渲染进程，将获取到的文件路径传给Vue组件中响应函数
+      event.sender.send('getSaveFileRes', filename)
     })
   })
 }

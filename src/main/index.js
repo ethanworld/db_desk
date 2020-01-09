@@ -32,7 +32,6 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
-
   BrowserWindow.addDevToolsExtension(path.resolve(__dirname, '../../devtools'))
 }
 

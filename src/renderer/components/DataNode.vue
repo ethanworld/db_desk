@@ -1,3 +1,4 @@
+import electron from "electron";
 <template>
 <div class="DataNode">
   <div class="Tips" v-if="auth['watch'] == 0">
@@ -12,7 +13,12 @@
     <!-- 文件夹 -->
     <el-main v-if="node['type'] === nodeType.dir">
       <div class="Tips">
-        文件夹
+        <div v-if="currentFileType > this.nodeType.dir">
+          选择成功
+        </div>
+        <div v-else>
+          暂未选择文件
+        </div>
       </div>
     </el-main>
     <el-main v-else-if="node['type'] === nodeType.img">
@@ -23,28 +29,28 @@
     <!-- excel -->
     <el-main v-else>
       <div class="divSearch" v-if="node['type'] !== 0">
-				<el-tag type="success" effect="dark" size='medium'>
-					查询结果： {{tableData.length}} 项
-				</el-tag>
-				<el-date-picker
-						v-model="searchStart"
-						type="date"
-						placeholder="开始日期">
-				</el-date-picker>
-				<span style="color: #aaa">--</span>
-				<el-date-picker
-						v-model="searchEnd"
-						type="date"
-						placeholder="结束日期">
-				</el-date-picker>
-				<el-button type="primary" icon="el-icon-search" @click="handleFilter">
-					搜索
-				</el-button>
-				<el-button type="danger" icon="el-icon-refresh" @click="handleFilterClear">
-					清除条件
-				</el-button>
-			</div>
-      <plx-table-grid :datas="tableData" ref="plTable">
+        <el-tag type="success" effect="dark" size='medium'>
+            查询结果： {{tableData.length}} 项
+        </el-tag>
+        <el-date-picker
+            v-model="searchStart"
+            type="date"
+            placeholder="开始日期">
+        </el-date-picker>
+        <span style="color: #aaa">--</span>
+        <el-date-picker
+            v-model="searchEnd"
+            type="date"
+            placeholder="结束日期">
+        </el-date-picker>
+        <el-button type="primary" icon="el-icon-search" @click="handleFilter">
+            搜索
+        </el-button>
+        <el-button type="danger" icon="el-icon-refresh" @click="handleFilterClear">
+            清除条件
+        </el-button>
+        </div>
+      <plx-table-grid id="plTable" :datas="tableData" ref="plTable">
         <plx-table-column
           v-for="(item, key) in tableColumns"
           :fixed="key === 0 ? 'left': ''"
@@ -66,23 +72,24 @@
             :on-change="handleFileSelect"
             :auto-upload="false">
             <el-button
-							:disabled="node['type'] !== 0"
-							slot="trigger"
-							size="medium"
-							icon="el-icon-monitor"
-							type="primary">
+                :disabled="node['type'] !== 0"
+                slot="trigger"
+                size="medium"
+                icon="el-icon-monitor"
+                type="primary">
               选择文件
             </el-button>
-					</el-upload>
+            </el-upload>
         </el-col>
         <el-col :span="5">
-          <el-button type="success" size="medium" @click="handleImport" 
+          <el-button type="success" size="medium" @click="handleImport"
+                     :disabled="currentFileType === 0 || currentFileType === null"
           v-if="node['type'] === nodeType.dir && auth['upload'] > 0">
             <i class="el-icon-upload2"/> 上传文件
           </el-button>
         </el-col>
         <el-col :span="5">
-          <el-button type="success" size="medium" @click="handleExport" 
+          <el-button type="success" size="medium" @click="handleExport"
           v-if="node['type'] !== nodeType.dir && auth['download'] > 0">
             <i class="el-icon-download"/> 导出文件
           </el-button>
@@ -177,6 +184,17 @@ export default {
     }
   },
   created () {
+    // 监听计算结果
+    this.$electron.ipcRenderer.on('getNodeListRes', (e, info) => {
+      // this.$electron.ipcRenderer.send('state')
+      setTimeout(() => {
+        // categories 需要是数组
+        this.$store.commit('setCategories', [info])
+        this.dialogVisiblePost = false
+        this.dialogVisiblePut = false
+        this.dialogVisibleDelete = false
+      }, 2000)
+    })
     // 配置文件获取回调
     this.$electron.ipcRenderer.on('getFileRes', (e, bytes) => {
       setTimeout(() => {
@@ -214,12 +232,12 @@ export default {
       }
     })
     this.$electron.ipcRenderer.on('getPostNodeRes', (e, res) => {
-      this.$store.commit('removeCategories')
-      history.go(0)
+      // 重新获取目录
+      this.$electron.ipcRenderer.send('getNodeList')
     })
     this.$electron.ipcRenderer.on('getPutNodeRes', (e, res) => {
-      this.$store.commit('removeCategories')
-      history.go(0)
+      // 重新获取目录
+      this.$electron.ipcRenderer.send('getNodeList')
     })
     // 获取文件上传回调
     this.$electron.ipcRenderer.on('getPostFileRes', (e, fileName) => {
@@ -231,7 +249,18 @@ export default {
       } else if (this.currentFileType === this.nodeType.img) {
         this.newNode.type = 2
       }
+      this.$message.success('上传成功')
       this.$electron.ipcRenderer.send('postNode', this.newNode)
+    })
+    // 文件夹回掉
+    this.$electron.ipcRenderer.on('getSaveFileRes', (e, path) => {
+      /* json数组转换excel */
+      let worksheet = XLSX.utils.json_to_sheet(this.tableData)
+      let wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, worksheet, 'sheet1')
+      /* 生成文件，导出D盘 */
+      XLSX.writeFile(wb, path + '/' + this.node['name'])
+      this.$message.success('保存成功')
     })
   },
   beforeRouteEnter (to, from, next) {
@@ -310,7 +339,9 @@ export default {
       }
       this.$electron.ipcRenderer.send('postFile', file['raw']['path'], file['name'])
     },
-    handleExport () {},
+    handleExport () {
+      this.$electron.ipcRenderer.send('saveFile')
+    },
     handleFilter () {
       if (this.searchStart === null || this.searchEnd === null) {
         this.$message.warning('查询条件不能为空！')
