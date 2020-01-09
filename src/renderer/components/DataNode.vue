@@ -41,24 +41,27 @@ import electron from "electron";
             查询结果： {{tableData.length}} 项
         </el-tag>
         <el-date-picker
+            size="medium" 
             v-model="searchStart"
             type="date"
             placeholder="开始日期">
         </el-date-picker>
         <span style="color: #aaa">--</span>
         <el-date-picker
+            size="medium" 
             v-model="searchEnd"
             type="date"
             placeholder="结束日期">
         </el-date-picker>
-        <el-button type="primary" icon="el-icon-search" @click="handleFilter">
+        &nbsp;&nbsp;
+        <el-button size="medium" type="primary" icon="el-icon-search" @click="handleFilter">
             搜索
         </el-button>
-        <el-button type="danger" icon="el-icon-refresh" @click="handleFilterClear">
+        <el-button size="medium" type="danger" icon="el-icon-refresh" @click="handleFilterClear">
             清除条件
         </el-button>
         </div>
-      <plx-table-grid id="plTable" :datas="tableData" ref="plTable">
+      <plx-table-grid id="plTable" :datas="tableData" ref="plTable" :pagination-show="false">
         <plx-table-column
           v-for="(item, key) in tableColumns"
           :fixed="key === 0 ? 'left': ''"
@@ -472,8 +475,9 @@ export default {
       .el-main{
         height: 100%;
         .divSearch{
-          padding: 10px 20px!important;
-          height: 60px!important;
+          padding: 0px 20px!important;
+          height: 80px!important;
+          line-height: 80px;
           text-align: left;
         }
         .plTableBox{
@@ -481,8 +485,9 @@ export default {
         }
       }
       .el-footer{
-        padding: 20px!important;
+        padding: 0 20px!important;
         height: 100px!important;
+        line-height: 100px!important;
         border-top: solid 1px #ddd;
       }
     }
