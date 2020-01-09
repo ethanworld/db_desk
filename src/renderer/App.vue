@@ -13,7 +13,7 @@
       </div>
     </div>
     <div id="main">
-      <router-view></router-view>
+      <router-view/>
     </div>
     <el-dialog
             title="确定退出登录"
@@ -40,6 +40,7 @@
     },
     methods: {
       handleLogout () {
+        this.$store.commit('removeCategories')
         this.$store.commit('removeAuth')
         this.dialogVisible = false
       }

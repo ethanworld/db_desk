@@ -17,7 +17,7 @@ export default new Vuex.Store({
   strict: process.env.NODE_ENV !== 'production',
   state: {
     root: 'http://localhost:8000/api/',
-    rootStatic: 'http://localhost:8000/static/files/',
+    rootStatic: 'D:\\proj_db\\files\\',
     auth: JSON.parse(localStorage.getItem('auth')) || null,
     categories: JSON.parse(localStorage.getItem('categories')) || null
   },
@@ -25,6 +25,10 @@ export default new Vuex.Store({
     clear (state) {
       localStorage.removeItem('categories')
       state.categories = null
+    },
+    setRootStatic (state, rootStatic) {
+      localStorage.setItem('rootStatic', JSON.stringify(rootStatic))
+      state.rootStatic = JSON.parse(localStorage.getItem('rootStatic'))
     },
     setAuth (state, auth) {
       localStorage.setItem('auth', JSON.stringify(auth))

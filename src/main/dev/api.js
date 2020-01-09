@@ -1,12 +1,14 @@
 const { ipcMain, dialog } = require('electron')
 let fs = require('fs')
 let mkdirp = require('mkdirp')
-let getDirName = require('path').dirname
+let path = require('path')
+let getDirName = path.dirname
 let models = require('./db')// 数据库链接信息
 let mysql = require('mysql')
 let $sql = require('./sql')
 // let fileRoot = __dirname.substring(0, __dirname.length - 6) + 'dist\\static\\files\\'
-let fileRoot = 'C:\\Users\\ZengYuan\\Desktop\\dist\\static\\files\\'
+// let fileRoot = 'C:\\Users\\ZengYuan\\Desktop\\dist\\static\\files\\'
+let fileRoot = path.join(__dirname, '/static/')
 
 // 连接数据库
 let conn = mysql.createConnection(models.mysql)
@@ -165,21 +167,24 @@ exports.api = function () {
       }
     })
   })
-  ipcMain.on('deleteNodeById', (event, id) => {
+  ipcMain.on('deleteNode', (event, id) => {
     let sql = $sql.categories.delete
     conn.query(sql, [id], function (err, result) {
       if (err) {
         console.log(err)
       }
       if (result) {
-        event.sender.send('getDeleteNodeRes', result[0])
+        event.sender.send('getDeleteNodeRes', result)
       }
     })
   })
   ipcMain.on('getFileByName', (event, name) => {
     fs.readFile('C:\\Users\\ZengYuan\\Desktop\\files\\' + name, (err, data) => {
-      if (err) throw err
-      event.sender.send('getFileRes', data)
+      if (err) {
+        event.sender.send('getFileRes', 0)
+      } else {
+        event.sender.send('getFileRes', data)
+      }
     })
   })
   ipcMain.on('postFile', (event, filePath, fileName) => {

@@ -1,8 +1,16 @@
 import electron from "electron";
 <template>
 <div class="DataNode">
-  <div class="Tips" v-if="auth['watch'] == 0">
+  <div class="Tips" v-if="auth['watch'] === 0">
     无查看权限
+  </div>
+  <div class="Tips" v-else-if="notFound === true">
+    <p>文件不存在</p>
+    <div v-if="node['layer'] !== 0 && auth['delete'] > 0">
+      <el-button type="danger" size="medium" @click="dialogVisibleDelete = true">
+        <i class="el-icon-delete"/> 删除节点
+      </el-button>
+    </div>
   </div>
   <!-- 下面表示有查看权限 -->
   <el-container v-else>
@@ -22,8 +30,8 @@ import electron from "electron";
       </div>
     </el-main>
     <el-main v-else-if="node['type'] === nodeType.img">
-      <div class="Tips">
-        图片
+      <div class="Tips" v-if="currentImageUrl" style="padding: 20px">
+        <img :src="currentImageUrl" style="max-width: 90%;max-height: 90%" alt="图片"/>
       </div>
     </el-main>
     <!-- excel -->
@@ -63,7 +71,7 @@ import electron from "electron";
     </el-main>
     <el-footer>
       <el-row>
-        <el-col :span="5">
+        <el-col :span="5" v-if="node['type'] === nodeType.dir && auth['upload'] > 0">
           <el-upload
             ref="upload"
             action="/"
@@ -81,21 +89,19 @@ import electron from "electron";
             </el-button>
             </el-upload>
         </el-col>
-        <el-col :span="5">
+        <el-col :span="5" v-if="node['type'] === nodeType.dir && auth['upload'] > 0">
           <el-button type="success" size="medium" @click="handleImport"
-                     :disabled="currentFileType === 0 || currentFileType === null"
-          v-if="node['type'] === nodeType.dir && auth['upload'] > 0">
+                     :disabled="currentFileType === 0 || currentFileType === null">
             <i class="el-icon-upload2"/> 上传文件
           </el-button>
         </el-col>
-        <el-col :span="5">
-          <el-button type="success" size="medium" @click="handleExport"
-          v-if="node['type'] !== nodeType.dir && auth['download'] > 0">
+        <el-col :span="5" v-if="node['type'] !== nodeType.dir && auth['download'] > 0">
+          <el-button type="success" size="medium" @click="handleExport">
             <i class="el-icon-download"/> 导出文件
           </el-button>
         </el-col>
-        <el-col :span="5">
-          <el-button type="primary" size="medium" @click="dialogVisiblePut = true" :disabled="node['layer'] === 0 || node['type'] !== 0">
+        <el-col :span="5" v-if="node['layer'] !== 0 && node['type'] === 0">
+          <el-button type="primary" size="medium" @click="dialogVisiblePut = true">
             <i class="el-icon-edit"/> 编辑名称
           </el-button>
         </el-col>
@@ -150,6 +156,9 @@ export default {
   computed: {
     auth () {
       return this.$store.state.auth
+    },
+    rootStatic () {
+      return this.$store.state.dirPath
     }
   },
   data () {
@@ -159,6 +168,7 @@ export default {
         xls: 1,
         img: 2
       },
+      notFound: false,
       searchStart: null,
       searchEnd: null,
       dialogVisiblePost: false,
@@ -198,6 +208,16 @@ export default {
     // 配置文件获取回调
     this.$electron.ipcRenderer.on('getFileRes', (e, bytes) => {
       setTimeout(() => {
+        if (bytes === 0) {
+          this.notFound = true
+          this.$message.error('文件不存在')
+          this.$nextTick(() => {
+            this.loading.close()
+          })
+          return
+        } else {
+          this.notFound = false
+        }
         let binary = ''
         let length = bytes.byteLength
         for (let i = 0; i < length; i++) {
@@ -224,12 +244,24 @@ export default {
       if (this.node['type'] === this.nodeType.xls) {
         // 节点类型是XML
         this.$electron.ipcRenderer.send('getFileByName', this.node['name'])
+      } else if (this.node['type'] === this.nodeType.img) {
+        this.currentFileType = this.nodeType.img
+        this.currentImageUrl = this.rootStatic + this.node['name']
+        // 节点类型是图片
+        this.$nextTick(() => {
+          this.loading.close()
+        })
       } else {
-        // 节点类型是文件夹或图片
+        this.handleInit()
+        // 节点类型是文件夹
         this.$nextTick(() => {
           this.loading.close()
         })
       }
+    })
+    this.$electron.ipcRenderer.on('getDeleteNodeRes', (e, res) => {
+      // 重新获取目录
+      this.$electron.ipcRenderer.send('getNodeList')
     })
     this.$electron.ipcRenderer.on('getPostNodeRes', (e, res) => {
       // 重新获取目录
@@ -295,6 +327,14 @@ export default {
       this.tableColumns = []
       this.tableData = []
       this.originTableData = []
+      // this.currentPage = 1
+      // this.currentFlag = 0
+      this.currentImage = null
+      this.currentImageUrl = ''
+      // this.currentPageSize = 100
+      // this.totalRows = 0
+      this.searchStart = null
+      this.searchEnd = null
     },
     handlePostNode () {
       if (this.newNode['name'] === '') {
@@ -312,7 +352,9 @@ export default {
       }
       this.$electron.ipcRenderer.send('putNode', this.node)
     },
-    handleDeleteNode () {},
+    handleDeleteNode () {
+      this.$electron.ipcRenderer.send('deleteNode', this.node['id'])
+    },
     handleFileSelect (file) {
       const types = file.name.split('.')[1]
       const imgType = ['jpg', 'jepg', 'png'].some(item => item === types)
@@ -323,7 +365,8 @@ export default {
       }
       if (imgType) {
         this.currentFileType = this.nodeType.img
-        this.currentImageUrl = URL.createObjectURL(file.raw)
+        // this.currentImageUrl = URL.createObjectURL(file.raw)
+        this.currentImageUrl = file.raw
         this.currentImage = file
       } else if (xlsType) {
         this.currentFileType = this.nodeType.xls

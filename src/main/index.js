@@ -2,7 +2,6 @@
 
 import { app, BrowserWindow } from 'electron'
 let api = require('./dev/api').api
-let path = require('path')
 
 /**
  * Set `__static` path to static files in production
@@ -24,7 +23,8 @@ function createWindow () {
   mainWindow = new BrowserWindow({
     height: 1000,
     useContentSize: true,
-    width: 2000
+    width: 2000,
+    webPreferences: {webSecurity: false} // 加上这个就可以获取到了本地的图片
   })
 
   mainWindow.loadURL(winURL)
@@ -32,7 +32,6 @@ function createWindow () {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
-  BrowserWindow.addDevToolsExtension(path.resolve(__dirname, '../../devtools'))
 }
 
 function initial () {
