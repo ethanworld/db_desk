@@ -66,11 +66,11 @@
             :on-change="handleFileSelect"
             :auto-upload="false">
             <el-button
-                :disabled="node['type'] !== 0"
-                slot="trigger"
-                size="medium"
-                icon="el-icon-monitor"
-                type="primary">
+							:disabled="node['type'] !== 0"
+							slot="trigger"
+							size="medium"
+							icon="el-icon-monitor"
+							type="primary">
               选择文件
             </el-button>
 					</el-upload>

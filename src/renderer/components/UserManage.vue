@@ -65,7 +65,7 @@
                 :disabled="scope.row.isAdmin > 0"
                 size="mini"
                 type="danger"
-                @click="hadnleDialog(scope.row)">删除</el-button>
+                @click="handleDialog(scope.row)">删除</el-button>
             </template>
           </el-table-column>
       </el-table>
@@ -113,9 +113,9 @@
       </el-form>
     </el-drawer>
     <el-dialog
-            title="确定删除用户"
-            :visible.sync="dialogVisible"
-            width="300px">
+      title="确定删除用户"
+      :visible.sync="dialogVisible"
+      width="300px">
       <el-button type="warning" @click="dialogVisible = false">取 消</el-button>
       <el-button type="primary" @click="handleDelete">确 定</el-button>
     </el-dialog>
@@ -198,7 +198,7 @@ export default {
       this.editUser = JSON.parse(JSON.stringify(row))
       this.drawerDisaply = true
     },
-    hadnleDialog (row) {
+    handleDialog (row) {
       this.editUser = row
       this.dialogVisible = true
     },
@@ -249,5 +249,4 @@ export default {
       padding: 20px!important;
     }
   }
-
 </style>
