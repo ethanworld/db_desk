@@ -194,11 +194,11 @@ export default {
         Object.keys(this.tableData[0]).forEach(column => {
           that.tableColumns.push(column)
         })
+        // 以服务的方式调用的 Loading 需要异步关闭
+        this.$nextTick(() => {
+          this.loading.close()
+        })
       }, 1000)
-      // 以服务的方式调用的 Loading 需要异步关闭
-      this.$nextTick(() => {
-        this.loading.close()
-      })
     })
     // 获取节点信息回调
     this.$electron.ipcRenderer.on('getNodeRes', (e, res) => {
