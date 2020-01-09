@@ -90,22 +90,22 @@ import electron from "electron";
             </el-upload>
         </el-col>
         <el-col :span="5" v-if="node['type'] === nodeType.dir && auth['upload'] > 0">
-          <el-button type="success" size="medium" @click="handleImport"
+          <el-button type="success" size="medium" v-intervalclick='{func:handleImport,time:5000,}'
                      :disabled="currentFileType === 0 || currentFileType === null">
             <i class="el-icon-upload2"/> 上传文件
           </el-button>
         </el-col>
         <el-col :span="5" v-if="node['type'] !== nodeType.dir && auth['download'] > 0">
-          <el-button type="success" size="medium" @click="handleExport">
+          <el-button type="success" size="medium" v-intervalclick='{func:handleExport,time:5000,}'>
             <i class="el-icon-download"/> 导出文件
           </el-button>
         </el-col>
-        <el-col :span="5" v-if="node['layer'] !== 0 && node['type'] === 0">
+        <el-col :span="5" v-if="node['layer'] !== 0 && node['type'] === 0 && auth['upload'] > 0">
           <el-button type="primary" size="medium" @click="dialogVisiblePut = true">
             <i class="el-icon-edit"/> 编辑名称
           </el-button>
         </el-col>
-        <el-col :span="5" v-if="node['type'] === nodeType.dir">
+        <el-col :span="5" v-if="node['type'] === nodeType.dir && auth['upload'] > 0">
           <el-button type="success" size="medium" @click="dialogVisiblePost = true ">
             <i class="el-icon-plus"/> 添加文件夹
           </el-button>
@@ -158,7 +158,7 @@ export default {
       return this.$store.state.auth
     },
     rootStatic () {
-      return this.$store.state.dirPath
+      return this.$store.state.rootStatic
     }
   },
   data () {
@@ -241,8 +241,19 @@ export default {
     // 获取节点信息回调
     this.$electron.ipcRenderer.on('getNodeRes', (e, res) => {
       this.node = res
+      // 节点以不存在于数据库中
+      if (res === null) {
+        // 重新获取目录
+        this.$electron.ipcRenderer.send('getNodeList')
+        this.$router.push({name: 'DataIndex'})
+        this.$nextTick(() => {
+          this.loading.close()
+        })
+        return
+      }
       if (this.node['type'] === this.nodeType.xls) {
         // 节点类型是XML
+        this.currentFileType = this.nodeType.xls
         this.$electron.ipcRenderer.send('getFileByName', this.node['name'])
       } else if (this.node['type'] === this.nodeType.img) {
         this.currentFileType = this.nodeType.img
@@ -261,13 +272,17 @@ export default {
     })
     this.$electron.ipcRenderer.on('getDeleteNodeRes', (e, res) => {
       // 重新获取目录
+      this.$message.success('删除成功')
       this.$electron.ipcRenderer.send('getNodeList')
+      // this.$router.push({name: 'DataIndex'})
     })
     this.$electron.ipcRenderer.on('getPostNodeRes', (e, res) => {
+      this.$message.success('新增成功')
       // 重新获取目录
       this.$electron.ipcRenderer.send('getNodeList')
     })
     this.$electron.ipcRenderer.on('getPutNodeRes', (e, res) => {
+      this.$message.success('修改成功')
       // 重新获取目录
       this.$electron.ipcRenderer.send('getNodeList')
     })
@@ -282,6 +297,7 @@ export default {
         this.newNode.type = 2
       }
       this.$message.success('上传成功')
+      console.log(this.newNode)
       this.$electron.ipcRenderer.send('postNode', this.newNode)
     })
     // 文件夹回掉
@@ -328,19 +344,26 @@ export default {
       this.tableData = []
       this.originTableData = []
       // this.currentPage = 1
-      // this.currentFlag = 0
+      this.currentFileType = 0
       this.currentImage = null
       this.currentImageUrl = ''
       // this.currentPageSize = 100
       // this.totalRows = 0
       this.searchStart = null
       this.searchEnd = null
+      this.newNode = {
+        name: '',
+        order: '',
+        parentId: '',
+        type: 0
+      }
     },
     handlePostNode () {
       if (this.newNode['name'] === '') {
         this.$message.error('请输入名称')
         return
       }
+      this.newNode.type = this.nodeType.dir
       this.newNode.parentId = this.node['id']
       this.newNode.order = this.node['order'] ? this.node['order'] + 1 : null
       this.$electron.ipcRenderer.send('postNode', this.newNode)
@@ -383,7 +406,17 @@ export default {
       this.$electron.ipcRenderer.send('postFile', file['raw']['path'], file['name'])
     },
     handleExport () {
-      this.$electron.ipcRenderer.send('saveFile')
+      console.log(this.currentFileType)
+      if (this.currentFileType === this.nodeType.xls) {
+        console.log('xls export')
+        this.$electron.ipcRenderer.send('saveFile')
+      } else if (this.currentFileType === this.nodeType.img) {
+        const link = document.createElement('a')
+        link.href = this.currentImageUrl
+        link.download = this.node['name']
+        link.click()
+        window.URL.revokeObjectURL(link.href)
+      }
     },
     handleFilter () {
       if (this.searchStart === null || this.searchEnd === null) {

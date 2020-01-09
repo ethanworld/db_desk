@@ -1,9 +1,9 @@
 {
-  "name": "电网预警系统",
+  "name": "grid_system",
   "version": "0.0.1",
   "author": "ethanworld <742643715@qq.com>",
   "description": "An electron-vue project",
-  "license": null,
+  "license": "zeng",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
@@ -22,7 +22,7 @@
     "postinstall": "npm run lint:fix"
   },
   "build": {
-    "productName": "db_desk",
+    "productName": "电网预警系统",
     "appId": "com.example.yourapp",
     "directories": {
       "output": "build"

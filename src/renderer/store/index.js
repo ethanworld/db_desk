@@ -35,6 +35,7 @@ export default new Vuex.Store({
       state.auth = JSON.parse(localStorage.getItem('auth'))
     },
     removeAuth (state) {
+      console.log('remove auth')
       localStorage.removeItem('auth')
       state.auth = null
       history.go(0)
@@ -45,6 +46,7 @@ export default new Vuex.Store({
     },
     removeCategories (state) {
       localStorage.removeItem('categories')
+      console.log('remove category')
       state.categories = null
     }
   }

@@ -1,14 +1,14 @@
 <template>
   <div id="app">
     <div id="header">
-      <span style="font-weight: bolder;float: left">电网主辅设备主动预警系统</span>
+      <router-link style="font-weight: bolder;float: left" :to="{name: 'DataIndex'}" >电网主辅设备主动预警系统</router-link>
       <router-link :to="{name: 'Login'}" v-if="auth === null">登录</router-link>
       <div v-else>
         <el-button type="text" @click="dialogVisible = true">
-          {{auth['username']}}
+          <i class="el-icon-user-solid"></i> {{auth['username']}}
         </el-button>
-        <router-link :to="{name: 'UserManage'}">
-          用户管理
+        <router-link :to="{name: 'UserManage'}" v-if="auth['isAdmin'] > 0">
+          <i class="el-icon-s-tools"></i> 用户管理
         </router-link>
       </div>
     </div>
@@ -38,11 +38,18 @@
         dialogVisible: false
       }
     },
+    created () {
+      this.$electron.ipcRenderer.on('getDirPathRes', (e, res) => {
+        console.log(res)
+        this.$store.commit('setRootStatic', res)
+      })
+      // 获取目录地址
+      this.$electron.ipcRenderer.send('getDirPath')
+    },
     methods: {
       handleLogout () {
-        this.$store.commit('removeCategories')
-        this.$store.commit('removeAuth')
         this.dialogVisible = false
+        this.$router.push({name: 'Login'})
       }
     }
   }
@@ -62,7 +69,6 @@
     span, a, button{
       padding: 0!important;
       margin: 0 20px!important;
-      font-size: smaller;
       line-height: 40px!important;
       color: #fff;
       text-decoration: none;
@@ -73,6 +79,7 @@
     button, a{
       margin: 0 10px;
       color: #fff;
+      font-size: 14px;
     }
   }
   #main{

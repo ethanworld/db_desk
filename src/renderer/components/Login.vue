@@ -21,10 +21,12 @@
 </template>
 
 <script>
+import { Loading } from 'element-ui'
 export default {
   name: 'Login',
   data () {
     return {
+      loading: {},
       loginForm: {
         username: null,
         password: null
@@ -45,23 +47,39 @@ export default {
     // 监听登录结果
     this.$electron.ipcRenderer.on('getLoginRes', (e, info) => {
       setTimeout(() => {
-        if (info['username'] !== info.username) {
-          this.$notify.error('账户或密码错误！')
-          return false
-        } else {
+        if (info.length > 0) {
           this.$notify.success('登录成功 ！')
-          this.$store.commit('setAuth', info)
+          this.$store.commit('setAuth', info[0])
           this.$router.push({name: 'DataIndex'})
-          return true
+        } else {
+          this.$notify.error('账户或密码错误！')
         }
-      }, 2000)
+        this.$nextTick(() => {
+          this.loading.close()
+        })
+      }, 1000)
     })
+  },
+  beforeRouteEnter (to, from, next) {
+    next(vm => {
+      vm.$store.commit('removeCategories')
+      vm.$store.commit('removeAuth')
+    })
+  },
+  beforeRouteUpdate (to, from, next) {
+    this.$store.commit('removeCategories')
+    this.$store.commit('removeAuth')
+    next()
   },
   methods: {
     handlePost (formName) {
       this.$refs[formName].validate((valid) => {
         if (valid) {
           this.$electron.ipcRenderer.send('login', this.loginForm)
+          this.loading = Loading.service({
+            fullscreen: false,
+            text: '登录中...'
+          })
         } else {
           this.$notify.error('登录出错了！')
           return false

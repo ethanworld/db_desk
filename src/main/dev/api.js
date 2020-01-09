@@ -7,8 +7,7 @@ let models = require('./db')// 数据库链接信息
 let mysql = require('mysql')
 let $sql = require('./sql')
 // let fileRoot = __dirname.substring(0, __dirname.length - 6) + 'dist\\static\\files\\'
-// let fileRoot = 'C:\\Users\\ZengYuan\\Desktop\\dist\\static\\files\\'
-let fileRoot = path.join(__dirname, '/static/')
+let fileRoot = 'D:\\proj_db\\files\\'
 
 // 连接数据库
 let conn = mysql.createConnection(models.mysql)
@@ -31,6 +30,9 @@ function buildJson (node, list) {
 }
 
 exports.api = function () {
+  ipcMain.on('getDirPath', (event) => {
+    event.sender.send('getDirPathRes', fileRoot)
+  })
   ipcMain.on('login', (event, arg) => {
     let sql = $sql.user.login
     conn.query(sql, [arg.username, arg.password], function (err, result) {
@@ -38,7 +40,7 @@ exports.api = function () {
         console.log(err)
       }
       if (result) {
-        event.sender.send('getLoginRes', result[0])
+        event.sender.send('getLoginRes', result)
       }
     })
   })
@@ -179,7 +181,7 @@ exports.api = function () {
     })
   })
   ipcMain.on('getFileByName', (event, name) => {
-    fs.readFile('C:\\Users\\ZengYuan\\Desktop\\files\\' + name, (err, data) => {
+    fs.readFile(fileRoot + name, (err, data) => {
       if (err) {
         event.sender.send('getFileRes', 0)
       } else {
